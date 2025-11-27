@@ -1,8 +1,6 @@
 # backend/main.py
 import os
 import json
-import zipfile
-import tempfile
 import re
 import bcrypt
 from datetime import datetime, date, time
@@ -15,8 +13,6 @@ from fastapi import (
     Depends,
     Query,
     HTTPException,
-    File,
-    UploadFile,
     Form,
     status,
 )
@@ -45,7 +41,10 @@ app = FastAPI(title="Telegram Memory Reader")
 
 # Статика
 app.mount("/static", StaticFiles(directory="backend/static"), name="static")
-app.mount("/exports", StaticFiles(directory="data/exports_raw"), name="exports")
+# Путь к экспортам (можно задать через переменную окружения)
+EXPORTS_STATIC_DIR = os.getenv("TGMEM_EXPORTS_DIR", "/opt/Tg-export_viewer/data/exports_raw")
+if os.path.exists(EXPORTS_STATIC_DIR):
+    app.mount("/exports", StaticFiles(directory=EXPORTS_STATIC_DIR), name="exports")
 
 templates = Jinja2Templates(directory="backend/templates")
 
@@ -604,164 +603,92 @@ def go_to_date(
     return RedirectResponse(url, status_code=303)
 
 
-# ===== Импорт чата через интерфейс (.zip) =====
-@app.get("/import", response_class=HTMLResponse)
-def import_form(
-    request: Request,
-    current_user: User = Depends(require_auth),
-):
-    return templates.TemplateResponse(
-        "import.html",
-        {"request": request, "current_user": current_user},
-    )
+# ===== Автоматическое сканирование директории с экспортами =====
 
 
-@app.post("/import", response_class=HTMLResponse)
-async def import_upload(
+def scan_exports_directory(db: Session, admin_user: User = None):
+    """
+    Сканирует директорию с экспортами и импортирует новые чаты.
+    Если admin_user не указан, будет использован первый админ из базы.
+    """
+    exports_path = Path(EXPORTS_STATIC_DIR)
+    if not exports_path.exists():
+        print(f"Директория экспортов не найдена: {EXPORTS_STATIC_DIR}")
+        return {"scanned": 0, "imported": 0, "errors": []}
+    
+    if not admin_user:
+        admin_user = db.query(User).filter(User.is_admin == True).first()
+        if not admin_user:
+            return {"scanned": 0, "imported": 0, "errors": ["Не найден администратор в базе"]}
+    
+    scanned = 0
+    imported = 0
+    errors = []
+    
+    for folder in exports_path.iterdir():
+        if not folder.is_dir():
+            continue
+        
+        scanned += 1
+        
+        # Проверяем, есть ли уже такой чат в базе
+        existing_chat = db.query(Chat).filter_by(export_folder=folder.name).first()
+        if existing_chat:
+            # Чат уже импортирован, пропускаем
+            continue
+        
+        # Импортируем новый чат
+        try:
+            import_chat_folder(folder, db, user_id=admin_user.id)
+            imported += 1
+        except Exception as e:
+            error_msg = f"Ошибка при импорте {folder.name}: {str(e)}"
+            errors.append(error_msg)
+            print(error_msg)
+    
+    return {
+        "scanned": scanned,
+        "imported": imported,
+        "errors": errors
+    }
+
+
+@app.post("/admin/scan-exports", response_class=HTMLResponse)
+def scan_exports(
     request: Request,
     db: Session = Depends(get_db),
-    file: UploadFile = File(...),
-    title: str = Form(""),
-    current_user: User = Depends(require_auth),
+    current_user: User = Depends(require_admin),
 ):
-    filename = file.filename or ""
-    if not filename.lower().endswith(".zip"):
-        return templates.TemplateResponse(
-            "import.html",
-            {
-                "request": request,
-                "current_user": current_user,
-                "error": "Нужен .zip-файл экспорта Telegram (HTML-режим).",
-            },
-        )
-
-    contents = await file.read()
-
-    # Валидация названия чата
-    if title.strip() and len(title.strip()) > 200:
-        return templates.TemplateResponse(
-            "import.html",
-            {
-                "request": request,
-                "current_user": current_user,
-                "error": "Название чата слишком длинное (максимум 200 символов).",
-            },
-        )
-
-    try:
-        with tempfile.TemporaryDirectory() as tmpdir:
-            zip_path = os.path.join(tmpdir, "upload.zip")
-            with open(zip_path, "wb") as f:
-                f.write(contents)
-
-            with zipfile.ZipFile(zip_path, "r") as zf:
-                namelist = zf.namelist()
-                if not namelist:
-                    return templates.TemplateResponse(
-                        "import.html",
-                        {
-                            "request": request,
-                            "current_user": current_user,
-                            "error": "Архив пустой.",
-                        },
-                    )
-
-                first = namelist[0]
-                root_dir = first.split("/")[0]  # обычно ChatExport_...
-                
-                # Защита от path traversal
-                if ".." in root_dir or "/" in root_dir or "\\" in root_dir:
-                    return templates.TemplateResponse(
-                        "import.html",
-                        {
-                            "request": request,
-                            "current_user": current_user,
-                            "error": "Некорректное имя папки в архиве.",
-                        },
-                    )
-                
-                # Проверяем, что все файлы в архиве находятся внутри root_dir
-                for name in namelist:
-                    if ".." in name or not name.startswith(root_dir + "/"):
-                        return templates.TemplateResponse(
-                            "import.html",
-                            {
-                                "request": request,
-                                "current_user": current_user,
-                                "error": "Архив содержит небезопасные пути.",
-                            },
-                        )
-
-                target_root = Path("data/exports_raw")
-                target_root.mkdir(parents=True, exist_ok=True)
-
-                zf.extractall(target_root)
-
-        folder_path = Path("data/exports_raw") / root_dir
-        if not folder_path.exists() or not folder_path.is_dir():
-            return templates.TemplateResponse(
-                "import.html",
-                {
-                    "request": request,
-                    "current_user": current_user,
-                    "error": "Не удалось найти папку экспорта после распаковки.",
-                },
-            )
-
-        # импортируем сообщения (передаём user_id для создания чата)
-        try:
-            import_chat_folder(folder_path, db, user_id=current_user.id)
-        except Exception as e:
-            return templates.TemplateResponse(
-                "import.html",
-                {
-                    "request": request,
-                    "current_user": current_user,
-                    "error": f"Ошибка при импорте: {str(e)}",
-                },
-            )
-
-        # находим чат
-        chat = db.query(Chat).filter_by(export_folder=root_dir).first()
-        if chat:
-            # Обновляем чат: привязываем к текущему пользователю, задаём название
-            chat.user_id = current_user.id
-            if title.strip():
-                chat.title = title.strip()[:200]  # Ограничение длины
-            # Пароль больше не устанавливается при импорте
-            db.add(chat)
-            db.commit()
-        else:
-            return templates.TemplateResponse(
-                "import.html",
-                {
-                    "request": request,
-                    "current_user": current_user,
-                    "error": "Ошибка: чат не был создан после импорта.",
-                },
-            )
-
-        # после импорта открываем список чатов
-        return RedirectResponse("/?success=Чат успешно импортирован", status_code=303)
+    """Ручной запуск сканирования директории с экспортами (только для админа)"""
+    result = scan_exports_directory(db, current_user)
     
-    except zipfile.BadZipFile:
-        return templates.TemplateResponse(
-            "import.html",
-            {
-                "request": request,
-                "current_user": current_user,
-                "error": "Некорректный ZIP-архив.",
-            },
-        )
+    if result["errors"]:
+        error_msg = f"Сканирование завершено. Импортировано: {result['imported']}, Ошибок: {len(result['errors'])}"
+        return RedirectResponse(f"/admin/chat-access?error={error_msg}", status_code=303)
+    else:
+        success_msg = f"Сканирование завершено. Найдено папок: {result['scanned']}, Импортировано новых чатов: {result['imported']}"
+        return RedirectResponse(f"/admin/chat-access?success={success_msg}", status_code=303)
+
+
+# Автоматическое сканирование при старте приложения
+@app.on_event("startup")
+async def startup_scan():
+    """Автоматическое сканирование директории с экспортами при старте приложения"""
+    db = SessionLocal()
+    try:
+        admin_user = db.query(User).filter(User.is_admin == True).first()
+        if admin_user:
+            print("Запуск автоматического сканирования экспортов...")
+            result = scan_exports_directory(db, admin_user)
+            print(f"Сканирование завершено. Найдено папок: {result['scanned']}, Импортировано новых чатов: {result['imported']}")
+            if result["errors"]:
+                print(f"Ошибки при сканировании: {result['errors']}")
+        else:
+            print("Администратор не найден, автоматическое сканирование пропущено")
     except Exception as e:
-        return templates.TemplateResponse(
-            "import.html",
-            {
-                "request": request,
-                "current_user": current_user,
-                "error": f"Ошибка при обработке файла: {str(e)}",
-            },
-        )
+        print(f"Ошибка при автоматическом сканировании: {e}")
+    finally:
+        db.close()
 
 
 # ===== Переименование чата =====

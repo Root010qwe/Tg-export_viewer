@@ -6,7 +6,6 @@
 <div class="index-header">
   <h1>{% if current_user.is_admin %}Все чаты{% else %}Мои чаты{% endif %}</h1>
   <div class="index-header-actions">
-    <a href="/import" class="btn">Импортировать чат</a>
     {% if current_user.is_admin %}
       <a href="/admin/users" class="btn btn-secondary">Админ-панель</a>
     {% endif %}
@@ -74,6 +73,6 @@
     {% endfor %}
   </ul>
 {% else %}
-  <p>Пока нет импортированных чатов. Зайди на страницу «Импорт чата».</p>
+  <p>Пока нет импортированных чатов.{% if current_user.is_admin %} Добавьте экспорты в директорию и используйте функцию сканирования в админ-панели.{% endif %}</p>
 {% endif %}
 {% endblock %}
