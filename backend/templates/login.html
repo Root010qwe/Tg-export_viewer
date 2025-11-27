@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block title %}Вход — Telegram Memory{% endblock %}
+
+{% block content %}
+<div class="index-header">
+  <h1>Вход</h1>
+</div>
+
+{% if error %}
+  <div class="message-error">
+    {{ error }}
+  </div>
+{% endif %}
+
+<form method="post" action="/login">
+  <div class="form-group">
+    <label for="username">Имя пользователя:</label>
+    <input type="text" id="username" name="username" required autocomplete="username">
+  </div>
+
+  <div class="form-group">
+    <label for="password">Пароль:</label>
+    <input type="password" id="password" name="password" required autocomplete="current-password">
+  </div>
+
+  <button type="submit" class="btn">Войти</button>
+</form>
+
+<p class="mt-md text-center">
+  Нет аккаунта? <a href="/register">Зарегистрироваться</a>
+</p>
+{% endblock %}

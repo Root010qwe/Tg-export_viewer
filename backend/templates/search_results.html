@@ -1,0 +1,41 @@
+<!-- backend/templates/search_results.html -->
+{% extends "base.html" %}
+
+{% block title %}Поиск в "{{ chat.title }}" — Telegram Memory{% endblock %}
+
+{% block content %}
+<h1>Поиск в чате: {{ chat.title }}</h1>
+<p>Запрос: <strong>{{ query }}</strong></p>
+<p><a href="/chats/{{ chat.id }}">← Назад к полной переписке</a></p>
+
+{% if results %}
+  <ul class="search-list">
+    {% for m in results %}
+      <li class="search-item">
+        <div class="search-meta">
+          {% if m.date %}
+            <span>{{ m.date.strftime("%d.%m.%Y %H:%M") }}</span>
+          {% endif %}
+          {% if m.sender %}
+            <span> — {{ m.sender }}</span>
+          {% endif %}
+        </div>
+        {% if m.text %}
+          <div class="search-text">
+            {{ m.text | replace('\n', '<br>') | safe }}
+          </div>
+        {% endif %}
+        {% if m.telegram_message_id %}
+          <div class="search-actions" style="margin-top: 8px;">
+            <a href="/chats/{{ chat.id }}?order=asc#message{{ m.telegram_message_id }}" class="btn btn-secondary" style="font-size: 13px; padding: 6px 12px;">
+              Перейти к сообщению
+            </a>
+          </div>
+        {% endif %}
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>Ничего не найдено.</p>
+{% endif %}
+{% endblock %}

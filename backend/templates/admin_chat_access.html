@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Управление доступом к чатам — Админ-панель{% endblock %}
+
+{% block content %}
+<div class="index-header">
+  <h1>Управление доступом к чатам</h1>
+  <div class="index-header-actions">
+    <a href="/" class="btn btn-secondary">Все чаты</a>
+    <a href="/admin/users" class="btn btn-secondary">Управление пользователями</a>
+  </div>
+</div>
+
+{% if request.query_params.get("error") %}
+  <div class="message-error">
+    {{ request.query_params.get("error") }}
+  </div>
+{% endif %}
+
+<form method="get" action="/admin/chat-access" class="user-select-form">
+  <label for="user_id">Выберите пользователя:</label>
+  <select id="user_id" name="user_id">
+    <option value="">-- Выберите пользователя --</option>
+    {% for user in users %}
+      <option value="{{ user.id }}" {% if selected_user and selected_user.id == user.id %}selected{% endif %}>
+        {{ user.username }}{% if user.is_admin %} (Админ){% endif %}
+      </option>
+    {% endfor %}
+  </select>
+  <button type="submit" class="btn">Показать</button>
+</form>
+
+{% if selected_user %}
+  <div class="admin-grid">
+    <div>
+      <h2>Доступные чаты пользователя: <strong>{{ selected_user.username }}</strong></h2>
+      {% if user_chats %}
+        <ul class="admin-chat-list">
+          {% for chat in user_chats %}
+            <li class="admin-chat-item">
+              <div class="admin-chat-item-content">
+                <div class="admin-chat-item-info">
+                  <strong>{{ chat.title }}</strong>
+                  {% if chat.user_id == selected_user.id %}
+                    <span class="text-muted text-small">(Свой чат)</span>
+                  {% else %}
+                    <span class="text-muted text-small">(Доступ выдан)</span>
+                  {% endif %}
+                </div>
+                {% if chat.user_id != selected_user.id %}
+                  <div class="admin-chat-item-actions">
+                    <form method="post" action="/admin/chat-access/revoke" style="margin: 0;">
+                      <input type="hidden" name="user_id" value="{{ selected_user.id }}">
+                      <input type="hidden" name="chat_id" value="{{ chat.id }}">
+                      <button type="submit" class="btn btn-danger">
+                        Отозвать доступ
+                      </button>
+                    </form>
+                  </div>
+                {% endif %}
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-muted">У пользователя нет доступа ни к одному чату.</p>
+      {% endif %}
+    </div>
+
+    <div>
+      <h2>Выдать доступ к чату</h2>
+      {% if available_chats %}
+        <ul class="admin-chat-list">
+          {% for chat in available_chats %}
+            <li class="admin-chat-item">
+              <div class="admin-chat-item-content">
+                <div class="admin-chat-item-info">
+                  <strong>{{ chat.title }}</strong>
+                  <div class="text-muted text-small" style="margin-top: 4px;">
+                    Владелец: {{ chat.owner.username }}
+                  </div>
+                </div>
+                <div class="admin-chat-item-actions">
+                  <form method="post" action="/admin/chat-access/grant" style="margin: 0;">
+                    <input type="hidden" name="user_id" value="{{ selected_user.id }}">
+                    <input type="hidden" name="chat_id" value="{{ chat.id }}">
+                    <button type="submit" class="btn btn-success">
+                      Выдать доступ
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-muted">Нет чатов, к которым можно выдать доступ.</p>
+      {% endif %}
+    </div>
+  </div>
+{% else %}
+  <p class="text-muted mt-lg">Выберите пользователя для управления доступом к чатам.</p>
+{% endif %}
+{% endblock %}
+

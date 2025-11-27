@@ -1,0 +1,123 @@
+<!-- backend/templates/chat_view.html -->
+{% extends "base.html" %}
+
+{% block title %}{{ chat.title }} — Telegram Memory{% endblock %}
+
+{% block head_extra %}
+  <!-- base: все относительные пути (css/js/media) из экспорта -->
+  <base href="/exports/{{ chat.export_folder }}/">
+
+  <!-- Оригинальный Telegram CSS -->
+  <link rel="stylesheet" href="/exports/{{ chat.export_folder }}/css/style.css">
+
+  <!-- Наши оверрайды для тёмной темы, тулбара и медиаплеера -->
+  <link rel="stylesheet" href="/static/css/chat_overrides.css">
+
+  <!-- Доступные даты для поиска (год/месяц/день) в JSON -->
+  <script id="tg-available-dates" type="application/json">
+{{ available_dates_json | safe }}
+  </script>
+
+  <!-- Оригинальный Telegram JS (если что-то нужно) -->
+  <script src="/exports/{{ chat.export_folder }}/js/script.js"></script>
+
+  <!-- Наш JS для темы/скролла/медиаплеера/дат -->
+  <script src="/static/js/chat.js" defer></script>
+{% endblock %}
+
+{% block content %}
+<div class="tgmem-chat-page">
+
+  <!-- ФИКСИРОВАННЫЙ ТУЛБАР -->
+  <div class="tgmem-toolbar">
+    <div class="tgmem-toolbar-main">
+      <div class="tgmem-chat-info">
+        <div class="tgmem-chat-title">{{ chat.title }}</div>
+        <div class="tgmem-chat-subtitle">
+          {% if chat.created_at %}
+            c {{ chat.created_at.strftime("%d.%m.%Y") }}
+          {% endif %}
+          {% if chat.updated_at %}
+            по {{ chat.updated_at.strftime("%d.%m.%Y") }}
+          {% endif %}
+          • сообщений: {{ total }}
+        </div>
+      </div>
+
+            <div class="tgmem-toolbar-buttons">
+        <a href="/" class="tgmem-btn">Все чаты</a>
+
+        <a
+          href="/chats/{{ chat.id }}?order=asc"
+          class="tgmem-sort-btn {% if order != 'desc' %}active{% endif %}"
+        >
+          Сначала старые
+        </a>
+        <a
+          href="/chats/{{ chat.id }}?order=desc"
+          class="tgmem-sort-btn {% if order == 'desc' %}active{% endif %}"
+        >
+          Сначала новые
+        </a>
+
+        <button id="tgmem-scroll-top" class="tgmem-btn">В начало</button>
+        <button id="tgmem-scroll-bottom" class="tgmem-btn">В конец</button>
+        <button id="tgmem-toggle-theme" class="tgmem-btn">Тема</button>
+      </div>
+
+
+    <div class="tgmem-toolbar-forms">
+      <!-- Поиск по тексту -->
+      <form class="tgmem-search-form" method="get" action="/chats/{{ chat.id }}/search">
+        <input
+          type="text"
+          name="q"
+          placeholder="Поиск по тексту..."
+          required
+        >
+        <button type="submit" class="tgmem-btn">Найти</button>
+      </form>
+
+      <!-- Поиск по дате: год / месяц / день -->
+      <form class="tgmem-date-form" id="tgmem-date-form" method="get" action="/chats/{{ chat.id }}/by_date">
+        <select id="tg-year-select" class="tgmem-select">
+          <option value="">Год</option>
+        </select>
+        <select id="tg-month-select" class="tgmem-select" disabled>
+          <option value="">Месяц</option>
+        </select>
+        <select id="tg-day-select" class="tgmem-select" disabled>
+          <option value="">День</option>
+        </select>
+
+        <input type="hidden" name="date" id="tg-date-input">
+        <input type="hidden" name="order" value="{{ order }}">
+        <button type="submit" class="tgmem-btn">К дате</button>
+      </form>
+    </div>
+  </div>
+
+ 
+
+      <div class="page_body">
+        <!-- Автоскролл отключен при смене сортировки, чтобы не мешать пользователю -->
+        <div class="history" data-auto-scroll="">
+          {% for m in messages %}
+            {{ m.raw_html | safe }}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- МОДАЛКА ДЛЯ МЕДИА -->
+  <div id="tgmem-media-overlay" class="tgmem-media-overlay">
+    <div class="tgmem-media-dialog">
+      <div class="tgmem-media-header">
+        <button id="tgmem-media-close" class="tgmem-btn">Назад</button>
+      </div>
+      <div id="tgmem-media-content" class="tgmem-media-content"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Список чатов — Telegram Memory{% endblock %}
+
+{% block content %}
+<div class="index-header">
+  <h1>{% if current_user.is_admin %}Все чаты{% else %}Мои чаты{% endif %}</h1>
+  <div class="index-header-actions">
+    <a href="/import" class="btn">Импортировать чат</a>
+    {% if current_user.is_admin %}
+      <a href="/admin/users" class="btn btn-secondary">Админ-панель</a>
+    {% endif %}
+  </div>
+</div>
+
+{% if success_msg %}
+  <div class="message-success">
+    {{ success_msg }}
+  </div>
+{% endif %}
+
+{% if error_msg %}
+  <div class="message-error">
+    {{ error_msg }}
+  </div>
+{% endif %}
+
+<form method="get" action="/" class="search-form">
+  <input 
+    type="text" 
+    name="search" 
+    value="{{ search }}" 
+    placeholder="Поиск по названию чата..." 
+    class="search-input"
+  >
+  <button type="submit" class="btn">Поиск</button>
+  {% if search %}
+    <a href="/" class="btn btn-secondary">Сбросить</a>
+  {% endif %}
+</form>
+
+{% if chats %}
+  <ul class="chat-list">
+    {% for chat in chats %}
+      <li class="chat-list-item">
+        <a href="/chats/{{ chat.id }}" class="chat-link">
+          <div class="chat-title">
+            {{ chat.title }}
+            {% if chat.password_hash %}
+              🔒
+            {% endif %}
+            {% if not current_user.is_admin and chat_access_map.get(chat.id) and chat.user_id != current_user.id %}
+              <span style="color: #94a3b8; font-size: 12px; margin-left: 8px;">(Доступ выдан)</span>
+            {% endif %}
+          </div>
+          <div class="chat-meta">
+            {% if chat.created_at %}
+              <span>с {{ chat.created_at.strftime("%d.%m.%Y") }}</span>
+            {% endif %}
+            {% if chat.updated_at %}
+              <span>по {{ chat.updated_at.strftime("%d.%m.%Y") }}</span>
+            {% endif %}
+            {% if current_user.is_admin %}
+              <span style="color: #94a3b8;">— Владелец: {{ chat.owner.username }}</span>
+            {% endif %}
+          </div>
+        </a>
+        <div class="chat-actions">
+          {% if chat.user_id == current_user.id or current_user.is_admin %}
+            <a href="/chats/{{ chat.id }}/edit" class="chat-edit-link">Переименовать</a>
+          {% endif %}
+        </div>
+      </li>
+    {% endfor %}
+  </ul>
+{% else %}
+  <p>Пока нет импортированных чатов. Зайди на страницу «Импорт чата».</p>
+{% endif %}
+{% endblock %}

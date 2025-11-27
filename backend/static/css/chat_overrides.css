@@ -1,0 +1,300 @@
+/* backend/static/css/chat_overrides.css */
+
+/* Обёртка страницы чата */
+.tgmem-chat-page {
+  margin-top: 12px;
+}
+
+/* ФИКСИРОВАННЫЙ ТУЛБАР */
+/* Вся панель – обычный блок, НЕ sticky */
+.tgmem-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(15, 23, 42, 0.98);
+  border: 1px solid #1f2937;
+  backdrop-filter: blur(8px);
+}
+
+/* Закреплён только верхний блок с заголовком и кнопками */
+.tgmem-toolbar-main {
+  position: sticky;
+  top: 8px;
+  z-index: 50;
+
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+
+  /* Небольшой фон, чтобы поверх контента смотрелся нормально */
+  background: rgba(15, 23, 42, 0.98);
+  padding-bottom: 4px;
+}
+
+
+.tgmem-chat-info {
+  min-width: 0;
+}
+
+.tgmem-chat-title {
+  font-size: 16px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tgmem-chat-subtitle {
+  font-size: 13px;
+  color: #9ca3af;
+  margin-top: 2px;
+}
+
+.tgmem-toolbar-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.tgmem-toolbar-forms {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Кнопки */
+.tgmem-sort-btn,
+.tgmem-btn {
+  border: none;
+  border-radius: 9999px;
+  padding: 6px 10px;
+  font-size: 13px;
+  cursor: pointer;
+  background: #1f2937;
+  color: #e5e7eb;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: background 0.1s ease, transform 0.05s ease;
+}
+
+.tgmem-sort-btn:hover,
+.tgmem-btn:hover {
+  background: #374151;
+}
+
+.tgmem-sort-btn:active,
+.tgmem-btn:active {
+  transform: scale(0.97);
+}
+
+.tgmem-sort-btn.active {
+  background: #3b82f6;
+  color: #ffffff;
+}
+
+/* Формы поиска и даты */
+.tgmem-search-form,
+.tgmem-date-form {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.tgmem-search-form input[type="text"],
+.tgmem-select {
+  padding: 6px 8px;
+  border-radius: 9999px;
+  border: 1px solid #4b5563;
+  background: #020617;
+  color: #e5e7eb;
+  font-size: 13px;
+  min-width: 0;
+}
+
+.tgmem-search-form input[type="text"]::placeholder {
+  color: #6b7280;
+}
+
+/* Обёртка вокруг исходного Telegram page_wrap */
+.tgmem-chat-wrap {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #1f2937;
+}
+
+/* Адаптив */
+@media (max-width: 768px) {
+  .tgmem-toolbar {
+    padding: 8px 10px;
+  }
+
+  .tgmem-toolbar-main {
+    align-items: flex-start;
+  }
+
+  .tgmem-toolbar-buttons {
+    justify-content: flex-start;
+  }
+
+  .tgmem-toolbar-forms {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .tgmem-search-form,
+  .tgmem-date-form {
+    width: 100%;
+  }
+
+  .tgmem-search-form input[type="text"],
+  .tgmem-select {
+    flex: 1;
+  }
+
+  .tgmem-chat-wrap {
+    border-radius: 10px;
+  }
+}
+
+/* ===== ТЁМНАЯ ТЕМА ===== */
+
+body.tgmem-dark {
+  background-color: #020617;
+  color: #e5e7eb;
+}
+
+/* Шапка */
+body.tgmem-dark .site-header {
+  background: #020617;
+  border-bottom-color: #1f2937;
+}
+
+/* Телеграмовские блоки */
+body.tgmem-dark .page_wrap {
+  background: transparent;
+}
+
+body.tgmem-dark .page_header {
+  background: transparent;
+  border-bottom-color: #1f2937;
+}
+
+body.tgmem-dark .history {
+  background: #020617;
+}
+
+/* "баблы" сообщений */
+body.tgmem-dark .history .message {
+  background-color: #020617;
+  border-color: #111827;
+}
+
+/* Имя отправителя */
+body.tgmem-dark .from_name {
+  color: #93c5fd;
+}
+
+/* Даты */
+body.tgmem-dark .date,
+body.tgmem-dark .pull_right.date {
+  color: #9ca3af;
+}
+
+/* Текст */
+body.tgmem-dark .text {
+  color: #e5e7eb;
+}
+
+/* Ссылки в истории */
+body.tgmem-dark .history a {
+  color: #93c5fd;
+}
+
+/* Сервисные сообщения / разделители дат */
+body.tgmem-dark .message.service {
+  background: #020617;
+  border-color: #1f2937;
+  color: #9ca3af;
+}
+
+/* Скроллбар у history */
+body.tgmem-dark .history {
+  scrollbar-width: thin;
+  scrollbar-color: #4b5563 #020617;
+}
+
+body.tgmem-dark .history::-webkit-scrollbar {
+  width: 6px;
+}
+
+body.tgmem-dark .history::-webkit-scrollbar-track {
+  background: #020617;
+}
+
+body.tgmem-dark .history::-webkit-scrollbar-thumb {
+  background-color: #4b5563;
+  border-radius: 9999px;
+}
+
+/* ===== МОДАЛКА МЕДИА ===== */
+
+.tgmem-media-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.tgmem-media-overlay.active {
+  display: flex;
+}
+
+.tgmem-media-dialog {
+  background: #020617;
+  border-radius: 12px;
+  padding: 10px;
+  max-width: 90vw;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tgmem-media-header {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.tgmem-media-content {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tgmem-media-content video,
+.tgmem-media-content audio,
+.tgmem-media-content img,
+.tgmem-media-content iframe {
+  max-width: 100%;
+  max-height: 80vh;
+}
+
+/* Специальный стиль для стикеров (маленький анимированный блок) */
+.tgmem-media-content .tgmem-sticker {
+  max-width: 200px;
+  max-height: 200px;
+}
+

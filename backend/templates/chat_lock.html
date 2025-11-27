@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Чат защищён паролем — Telegram Memory{% endblock %}
+
+{% block content %}
+<div class="tgmem-chat-page">
+  <div class="tgmem-toolbar">
+    <div class="tgmem-toolbar-main">
+      <div class="tgmem-chat-info">
+        <div class="tgmem-chat-title">{{ chat.title }}</div>
+        <div class="tgmem-chat-subtitle">
+          Чат защищён паролем
+        </div>
+      </div>
+
+      <div class="tgmem-toolbar-buttons">
+        <a href="/" class="tgmem-btn">Все чаты</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="tgmem-chat-wrap" style="padding: 16px;">
+    <h2>Введите пароль для чата</h2>
+    {% if error %}
+      <p style="color: #f97373;">{{ error }}</p>
+    {% endif %}
+
+    <form method="post" action="/chats/{{ chat.id }}/unlock">
+      <input type="hidden" name="order" value="{{ order }}">
+      <div style="margin-bottom: 8px;">
+        <input
+          type="password"
+          name="password"
+          required
+          placeholder="Пароль"
+          style="padding: 6px 8px; border-radius: 9999px; border: 1px solid #4b5563; background: #020617; color: #e5e7eb; width: 100%; max-width: 260px;"
+        >
+      </div>
+      <button type="submit" class="tgmem-btn">Открыть чат</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
